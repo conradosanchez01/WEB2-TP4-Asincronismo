@@ -1,0 +1,22 @@
+{
+  "name": "web2-tp4-asincronismo",
+  "version": "1.0.0",
+  "description": "TP4 · Asincronismo e integración con Node.js y TypeScript — Lista compartida en tiempo real con WebSocket y SSE",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
