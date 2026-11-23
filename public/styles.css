@@ -13,6 +13,7 @@
   --warning-bg: rgba(245, 158, 11, 0.14);
   --danger: #ef4444;
   --danger-bg: rgba(239, 68, 68, 0.14);
+  --gold: #fbbf24;
   --radius: 10px;
 }
 
@@ -160,6 +161,32 @@ button:disabled {
   background: var(--primary-hover);
 }
 
+.btn-vote {
+  background: var(--surface-alt);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-vote:hover:not(:disabled) {
+  border-color: var(--primary);
+}
+
+.btn-vote.voted {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: rgba(34, 197, 94, 0.5);
+}
+
+.btn-danger {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.25);
+}
+
 .btn-ghost {
   background: transparent;
   color: var(--text-muted);
@@ -275,13 +302,24 @@ button:disabled {
 
 .product-card {
   display: grid;
-  grid-template-columns: 72px 1fr;
+  grid-template-columns: 44px 72px 1fr auto;
   align-items: center;
   gap: 0.9rem;
   background: var(--surface-alt);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 0.75rem 0.9rem;
+}
+
+.product-rank {
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.product-rank.rank-1 {
+  color: var(--gold);
 }
 
 .product-thumb {
@@ -316,10 +354,46 @@ button:disabled {
   font-weight: 700;
 }
 
+.product-voters {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+.product-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.votes-pill {
+  min-width: 76px;
+  text-align: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
 .empty-state {
   text-align: center;
   padding: 2rem 1rem;
   color: var(--text-muted);
   border: 1px dashed var(--border);
   border-radius: var(--radius);
+}
+
+@media (max-width: 680px) {
+  .product-card {
+    grid-template-columns: 36px 56px 1fr;
+  }
+
+  .product-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
 }

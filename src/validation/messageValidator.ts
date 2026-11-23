@@ -183,6 +183,26 @@ export function parseAndValidateClientMessage(
       };
     }
 
+    case 'vote':
+    case 'unvote':
+    case 'remove_product': {
+      if (!isPositiveSafeInt(record.productId)) {
+        return {
+          ok: false,
+          code: 'INVALID_PAYLOAD',
+          message: 'El campo "productId" debe ser un número entero positivo.',
+        };
+      }
+
+      return {
+        ok: true,
+        value: {
+          type: record.type,
+          productId: record.productId,
+        },
+      };
+    }
+
     default: {
       return {
         ok: false,

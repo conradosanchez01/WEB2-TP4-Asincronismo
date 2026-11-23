@@ -8,13 +8,15 @@ export const NAME_MIN_LENGTH = 2;
 export const NAME_MAX_LENGTH = 20;
 export const MAX_PROPOSAL_IDS = 10;
 
-/** Representación pública de un producto en la lista compartida (datos originados en el servidor). */
+/** Representación pública de un producto en el ranking (datos originados en el servidor). */
 export interface ProductItem {
   id: number;
   title: string;
   price: number;
   image: string;
   proposedBy: string;
+  votesCount: number;
+  voters: string[];
   addedAt: number;
 }
 
@@ -39,7 +41,11 @@ export type ServerErrorCode =
   | 'INVALID_PAYLOAD'
   | 'NOT_JOINED'
   | 'ALREADY_JOINED'
-  | 'NAME_TAKEN';
+  | 'NAME_TAKEN'
+  | 'PRODUCT_NOT_FOUND'
+  | 'ALREADY_VOTED'
+  | 'NOT_VOTED'
+  | 'FORBIDDEN';
 
 /* ============================================================================
  * Mensajes WebSocket: Cliente (Participante) -> Servidor
@@ -59,8 +65,31 @@ export interface ProposeProductsMessage {
   requestId?: string;
 }
 
+/** Solicitud para registrar el voto del participante en un producto existente. */
+export interface VoteMessage {
+  type: 'vote';
+  productId: number;
+}
+
+/** Solicitud para retirar un voto previamente emitido por el participante. */
+export interface UnvoteMessage {
+  type: 'unvote';
+  productId: number;
+}
+
+/** Solicitud para eliminar un producto de la lista (solo permitido a quien lo propuso). */
+export interface RemoveProductMessage {
+  type: 'remove_product';
+  productId: number;
+}
+
 /** Unión discriminada de todos los mensajes válidos que puede enviar un cliente. */
-export type ClientMessage = JoinMessage | ProposeProductsMessage;
+export type ClientMessage =
+  | JoinMessage
+  | ProposeProductsMessage
+  | VoteMessage
+  | UnvoteMessage
+  | RemoveProductMessage;
 
 /* ============================================================================
  * Mensajes WebSocket: Servidor -> Cliente (Participante)
@@ -68,7 +97,7 @@ export type ClientMessage = JoinMessage | ProposeProductsMessage;
 
 /**
  * Respuesta privada al participante que acaba de ingresar correctamente.
- * Le entrega su nombre confirmado, quiénes están conectados y la lista completa de productos.
+ * Le entrega su nombre confirmado, quiénes están conectados y el ranking actual completo.
  */
 export interface WelcomeMessage {
   type: 'welcome';
@@ -87,10 +116,14 @@ export interface ParticipantsUpdatedMessage {
   participant: string;
 }
 
-export type ListUpdateReason = 'products_added';
+export type ListUpdateReason =
+  | 'products_added'
+  | 'vote_added'
+  | 'vote_removed'
+  | 'product_removed';
 
 /**
- * Broadcast enviado a todos los participantes cuando la lista compartida cambia efectivamente.
+ * Broadcast enviado a todos los participantes cuando la lista o el ranking cambian efectivamente.
  */
 export interface ListUpdatedMessage {
   type: 'list_updated';

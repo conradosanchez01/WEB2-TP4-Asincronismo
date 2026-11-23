@@ -164,6 +164,18 @@ export class WsHandler {
           message.requestId
         );
         return;
+
+      case 'vote':
+        this.handleVote(session, session.name, message.productId);
+        return;
+
+      case 'unvote':
+        this.handleUnvote(session, session.name, message.productId);
+        return;
+
+      case 'remove_product':
+        this.handleRemoveProduct(session, session.name, message.productId);
+        return;
     }
   }
 
@@ -189,12 +201,12 @@ export class WsHandler {
 
     session.name = result.value;
 
-    // Quien entra recibe de inmediato los participantes y toda la lista actual de productos.
+    // Quien entra recibe de inmediato los participantes y el ranking completo actual.
     this.send(session.ws, {
       type: 'welcome',
       you: session.name,
       participants: this.store.getParticipants(),
-      products: this.store.getProducts(),
+      products: this.store.getRankedProducts(),
     });
 
     // Los demás participantes ya unidos reciben el aviso de ingreso.
@@ -297,15 +309,78 @@ export class WsHandler {
       failed: failures,
     });
 
-    // Solo difundimos la nueva lista si efectivamente se incorporó al menos un producto.
+    // Solo difundimos el nuevo ranking si efectivamente se incorporó al menos un producto.
     if (added.length > 0) {
       this.broadcastToJoined({
         type: 'list_updated',
-        products: this.store.getProducts(),
+        products: this.store.getRankedProducts(),
         reason: 'products_added',
         actor: actorName,
       });
     }
+  }
+
+  /** Registra un voto y difunde el ranking reordenado a todos los participantes. */
+  private handleVote(
+    session: ClientSession,
+    actorName: string,
+    productId: number
+  ): void {
+    const result = this.store.vote(productId, actorName);
+    if (!result.ok) {
+      this.sendError(session.ws, result.code, result.message);
+      return;
+    }
+
+    this.broadcastToJoined({
+      type: 'list_updated',
+      products: this.store.getRankedProducts(),
+      reason: 'vote_added',
+      actor: actorName,
+    });
+  }
+
+  /** Retira un voto existente y difunde el ranking reordenado a todos los participantes. */
+  private handleUnvote(
+    session: ClientSession,
+    actorName: string,
+    productId: number
+  ): void {
+    const result = this.store.unvote(productId, actorName);
+    if (!result.ok) {
+      this.sendError(session.ws, result.code, result.message);
+      return;
+    }
+
+    this.broadcastToJoined({
+      type: 'list_updated',
+      products: this.store.getRankedProducts(),
+      reason: 'vote_removed',
+      actor: actorName,
+    });
+  }
+
+  /**
+   * Quita un producto si el solicitante es su autor; caso contrario responde FORBIDDEN
+   * únicamente al solicitante sin alterar la lista.
+   */
+  private handleRemoveProduct(
+    session: ClientSession,
+    actorName: string,
+    productId: number
+  ): void {
+    const result = this.store.removeProduct(productId, actorName);
+    if (!result.ok) {
+      this.sendError(session.ws, result.code, result.message);
+      return;
+    }
+
+    this.broadcastToJoined({
+      type: 'list_updated',
+      products: this.store.getRankedProducts(),
+      reason: 'product_removed',
+      actor: actorName,
+    });
   }
 
   /**

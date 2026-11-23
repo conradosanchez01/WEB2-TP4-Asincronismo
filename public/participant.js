@@ -119,7 +119,7 @@
     pendingProposalsBox.classList.remove('hidden');
     for (const [, ids] of pendingProposals) {
       const line = document.createElement('div');
-      line.textContent = `Esperando respuesta del catálogo para los IDs: ${ids.join(', ')}...`;
+      line.textContent = `Esperando respuesta del catálogo para los IDs: ${ids.join(', ')} (podés seguir votando normalmente).`;
       pendingProposalsList.appendChild(line);
     }
   }
@@ -168,7 +168,10 @@
     proposalResultBox.classList.remove('hidden');
   }
 
-  /** Renderiza las tarjetas de productos con datos provistos por el servidor (título, precio e imagen). */
+  /**
+   * Renderiza el ranking de productos ordenados por votos (título, precio, imagen,
+   * votantes, botón para votar/quitar voto y botón para quitar solo si sos el autor).
+   */
   function renderProducts() {
     productsCountEl.textContent = String(currentProducts.length);
     productsListEl.replaceChildren();
@@ -182,9 +185,15 @@
       return;
     }
 
-    for (const product of currentProducts) {
+    const meKey = currentUser ? normalizeName(currentUser) : null;
+
+    currentProducts.forEach((product, index) => {
       const card = document.createElement('article');
       card.className = 'product-card';
+
+      const rank = document.createElement('div');
+      rank.className = index === 0 ? 'product-rank rank-1' : 'product-rank';
+      rank.textContent = `#${index + 1}`;
 
       const img = document.createElement('img');
       img.className = 'product-thumb';
@@ -214,11 +223,63 @@
       proposer.textContent = `Propuesto por ${product.proposedBy}`;
 
       meta.append(price, idSpan, proposer);
-      info.append(title, meta);
 
-      card.append(img, info);
+      const voters = document.createElement('div');
+      voters.className = 'product-voters';
+      voters.textContent =
+        product.voters.length > 0
+          ? `Votos de: ${product.voters.join(', ')}`
+          : 'Sin votos todavía';
+
+      info.append(title, meta, voters);
+
+      const actions = document.createElement('div');
+      actions.className = 'product-actions';
+
+      const votesPill = document.createElement('span');
+      votesPill.className = 'votes-pill';
+      votesPill.textContent = `${product.votesCount} ${product.votesCount === 1 ? 'voto' : 'votos'}`;
+
+      const hasVoted =
+        meKey !== null &&
+        product.voters.some((voter) => normalizeName(voter) === meKey);
+
+      const voteBtn = document.createElement('button');
+      voteBtn.type = 'button';
+      voteBtn.className = hasVoted ? 'btn-vote voted' : 'btn-vote';
+      voteBtn.textContent = hasVoted ? 'Quitar voto' : 'Votar';
+      voteBtn.addEventListener('click', () => {
+        hideServerError();
+        sendJson({
+          type: hasVoted ? 'unvote' : 'vote',
+          productId: product.id,
+        });
+      });
+
+      actions.append(votesPill, voteBtn);
+
+      // El botón Quitar se muestra solo al autor (y el servidor igual valida la regla)
+      const isProposer =
+        meKey !== null && normalizeName(product.proposedBy) === meKey;
+
+      if (isProposer) {
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'btn-danger';
+        removeBtn.textContent = 'Quitar';
+        removeBtn.addEventListener('click', () => {
+          hideServerError();
+          sendJson({
+            type: 'remove_product',
+            productId: product.id,
+          });
+        });
+        actions.appendChild(removeBtn);
+      }
+
+      card.append(rank, img, info, actions);
       productsListEl.appendChild(card);
-    }
+    });
   }
 
   // --- Eventos del ciclo de vida del WebSocket ---

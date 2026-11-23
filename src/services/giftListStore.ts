@@ -9,8 +9,12 @@ interface StoredProduct {
   price: number;
   image: string;
   proposedBy: string;
+  /** Nombre normalizado del autor para verificar permisos de eliminación sin distinguir mayúsculas. */
+  proposedByNormalized: string;
+  /** Mapa de votantes: nombre normalizado -> nombre visible (garantiza máximo 1 voto por persona). */
+  voters: Map<string, string>;
   addedAt: number;
-  /** Contador incremental para garantizar un orden estable incluso si dos productos llegan en el mismo milisegundo. */
+  /** Contador incremental para desempatar de forma estable productos con igual cantidad de votos. */
   sequence: number;
 }
 
@@ -21,7 +25,7 @@ export type StoreActionResult<T = void> =
 
 /**
  * Almacén en memoria de la aplicación (sin base de datos).
- * Administra los participantes conectados y la lista de productos propuestos.
+ * Administra los participantes conectados, los productos propuestos, sus votos y el ranking.
  */
 export class GiftListStore {
   // Mapa: nombre normalizado (minúsculas) -> nombre visible elegido por el usuario.
@@ -91,6 +95,8 @@ export class GiftListStore {
       price: catalogProduct.price,
       image: catalogProduct.image,
       proposedBy,
+      proposedByNormalized: normalizeName(proposedBy),
+      voters: new Map<string, string>(),
       addedAt: Date.now(),
       sequence: ++this.sequenceCounter,
     };
@@ -99,10 +105,98 @@ export class GiftListStore {
     return { ok: true, product: this.toProductItem(stored) };
   }
 
-  /** Devuelve los productos de la lista ordenados por orden de incorporación. */
-  getProducts(): ProductItem[] {
+  /**
+   * Registra el voto de un participante sobre un producto existente.
+   * Al guardarse por clave de votante en un Map (y ejecutarse síncronamente),
+   * dos votos simultáneos de personas distintas siempre se contabilizan ambos,
+   * mientras que el mismo usuario nunca puede votar dos veces el mismo producto.
+   */
+  vote(productId: number, voterDisplayName: string): StoreActionResult {
+    const product = this.products.get(productId);
+    if (!product) {
+      return {
+        ok: false,
+        code: 'PRODUCT_NOT_FOUND',
+        message: `No existe el producto #${productId} en la lista.`,
+      };
+    }
+
+    const voterKey = normalizeName(voterDisplayName);
+    if (product.voters.has(voterKey)) {
+      return {
+        ok: false,
+        code: 'ALREADY_VOTED',
+        message: `Ya votaste el producto "${product.title}".`,
+      };
+    }
+
+    product.voters.set(voterKey, voterDisplayName);
+    return { ok: true, value: undefined };
+  }
+
+  /** Retira el voto previamente emitido por un participante sobre un producto. */
+  unvote(productId: number, voterDisplayName: string): StoreActionResult {
+    const product = this.products.get(productId);
+    if (!product) {
+      return {
+        ok: false,
+        code: 'PRODUCT_NOT_FOUND',
+        message: `No existe el producto #${productId} en la lista.`,
+      };
+    }
+
+    const voterKey = normalizeName(voterDisplayName);
+    if (!product.voters.has(voterKey)) {
+      return {
+        ok: false,
+        code: 'NOT_VOTED',
+        message: `Todavía no votaste el producto "${product.title}".`,
+      };
+    }
+
+    product.voters.delete(voterKey);
+    return { ok: true, value: undefined };
+  }
+
+  /**
+   * Quita un producto de la lista aplicando la regla de autorización en el servidor:
+   * únicamente quien propuso el producto puede eliminarlo.
+   */
+  removeProduct(productId: number, requesterDisplayName: string): StoreActionResult {
+    const product = this.products.get(productId);
+    if (!product) {
+      return {
+        ok: false,
+        code: 'PRODUCT_NOT_FOUND',
+        message: `No existe el producto #${productId} en la lista.`,
+      };
+    }
+
+    if (product.proposedByNormalized !== normalizeName(requesterDisplayName)) {
+      return {
+        ok: false,
+        code: 'FORBIDDEN',
+        message: `Solo "${product.proposedBy}" (quien propuso el producto) puede quitarlo de la lista.`,
+      };
+    }
+
+    this.products.delete(productId);
+    return { ok: true, value: undefined };
+  }
+
+  /**
+   * Devuelve todos los productos ordenados por ranking:
+   * 1) Mayor cantidad de votos primero (DESC).
+   * 2) En caso de empate, el que se agregó antes queda arriba (sequence ASC).
+   */
+  getRankedProducts(): ProductItem[] {
     return Array.from(this.products.values())
-      .sort((a, b) => a.sequence - b.sequence)
+      .sort((a, b) => {
+        if (b.voters.size !== a.voters.size) {
+          return b.voters.size - a.voters.size;
+        }
+        return a.sequence - b.sequence;
+      })
       .map((stored) => this.toProductItem(stored));
   }
 
@@ -114,6 +208,8 @@ export class GiftListStore {
       price: stored.price,
       image: stored.image,
       proposedBy: stored.proposedBy,
+      votesCount: stored.voters.size,
+      voters: Array.from(stored.voters.values()),
       addedAt: stored.addedAt,
     };
   }
