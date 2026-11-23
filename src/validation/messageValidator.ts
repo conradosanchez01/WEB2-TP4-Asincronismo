@@ -1,5 +1,6 @@
 import {
   ClientMessage,
+  MAX_PROPOSAL_IDS,
   NAME_MAX_LENGTH,
   NAME_MIN_LENGTH,
   ServerErrorCode,
@@ -11,7 +12,7 @@ import {
  */
 export type ValidationResult<T> =
   | { ok: true; value: T }
-  | { ok: false; code: ServerErrorCode; message: string };
+  | { ok: false; code: ServerErrorCode; message: string; requestId?: string };
 
 /** Detecta caracteres de control invisibles (saltos de línea, tabs raros, NULL, etc.). */
 const CONTROL_CHARS_REGEX = /[\u0000-\u001F\u007F]/;
@@ -65,6 +66,16 @@ export function validateParticipantName(raw: unknown): ValidationResult<string> 
   return { ok: true, value: cleaned };
 }
 
+/** Verifica que un valor sea un número entero positivo y seguro (descarta strings, floats, NaN, <= 0). */
+function isPositiveSafeInt(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    Number.isSafeInteger(value) &&
+    value > 0
+  );
+}
+
 /**
  * Parsea un texto crudo recibido por WebSocket y valida que cumpla el contrato JSON.
  * Se ejecuta en runtime porque los tipos de TypeScript desaparecen al compilar.
@@ -110,6 +121,65 @@ export function parseAndValidateClientMessage(
       return {
         ok: true,
         value: { type: 'join', name: nameCheck.value },
+      };
+    }
+
+    case 'propose_products': {
+      // Extraemos un requestId válido (si vino) para devolverlo incluso si falla la validación.
+      const validRequestId =
+        typeof record.requestId === 'string' &&
+        record.requestId.trim() !== '' &&
+        record.requestId.length <= 64
+          ? record.requestId
+          : undefined;
+      const reqIdProp = validRequestId !== undefined ? { requestId: validRequestId } : {};
+
+      const ids = record.productIds;
+      if (!Array.isArray(ids)) {
+        return {
+          ok: false,
+          code: 'INVALID_PAYLOAD',
+          message: 'El campo "productIds" debe ser un arreglo de IDs numéricos.',
+          ...reqIdProp,
+        };
+      }
+
+      if (ids.length === 0 || ids.length > MAX_PROPOSAL_IDS) {
+        return {
+          ok: false,
+          code: 'INVALID_PAYLOAD',
+          message: `Debés enviar entre 1 y ${MAX_PROPOSAL_IDS} IDs de productos por propuesta.`,
+          ...reqIdProp,
+        };
+      }
+
+      for (const id of ids) {
+        if (!isPositiveSafeInt(id)) {
+          return {
+            ok: false,
+            code: 'INVALID_PAYLOAD',
+            message:
+              'Todos los elementos de "productIds" deben ser enteros positivos válidos dentro del rango numérico seguro.',
+            ...reqIdProp,
+          };
+        }
+      }
+
+      if (record.requestId !== undefined && validRequestId === undefined) {
+        return {
+          ok: false,
+          code: 'INVALID_PAYLOAD',
+          message: 'El campo opcional "requestId" debe ser un texto de hasta 64 caracteres.',
+        };
+      }
+
+      return {
+        ok: true,
+        value: {
+          type: 'propose_products',
+          productIds: ids as number[],
+          ...reqIdProp,
+        },
       };
     }
 

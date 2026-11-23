@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadConfig } from './config.js';
+import { CatalogService } from './services/catalogService.js';
 import { GiftListStore } from './services/giftListStore.js';
 import { WsHandler } from './transport/wsHandler.js';
 
@@ -63,7 +64,8 @@ async function serveStaticFile(
 function main(): void {
   const config = loadConfig();
   const store = new GiftListStore();
-  const wsHandler = new WsHandler(store);
+  const catalog = new CatalogService(config);
+  const wsHandler = new WsHandler(store, catalog);
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);

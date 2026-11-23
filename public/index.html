@@ -58,6 +58,46 @@
           <h2>Participantes conectados (<span id="participants-count">0</span>)</h2>
           <div id="participants-list" class="participants-list"></div>
         </section>
+
+        <section class="card">
+          <h2>Proponer productos del catálogo</h2>
+          <form id="propose-form" class="form-row">
+            <input
+              id="product-ids-input"
+              type="text"
+              placeholder="Ej: 1, 2, 15 (entre 1 y 10 IDs de DummyJSON)"
+              autocomplete="off"
+              required
+            />
+            <button id="propose-btn" type="submit" class="btn-primary">
+              Proponer
+            </button>
+          </form>
+          <p class="hint">
+            Ingresá uno o varios IDs separados por coma o espacio (máximo 10 por acción).
+            El servidor los consulta en simultáneo sin bloquear a los demás.
+          </p>
+        </section>
+
+        <!-- Indicador no bloqueante mientras el servidor consulta al catálogo -->
+        <div id="pending-proposals-box" class="alert alert-pending hidden" aria-live="polite">
+          <strong>Consultando catálogo...</strong>
+          <div id="pending-proposals-list"></div>
+        </div>
+
+        <!-- Resultado privado de la última propuesta (solo visible para quien propuso) -->
+        <div id="proposal-result-box" class="alert alert-result hidden" aria-live="polite">
+          <div class="alert-header">
+            <strong>Resultado de tu propuesta</strong>
+            <button id="dismiss-result-btn" type="button" class="btn-ghost">Cerrar ✕</button>
+          </div>
+          <div id="proposal-result-content"></div>
+        </div>
+
+        <section class="card">
+          <h2>Productos propuestos (<span id="products-count">0</span>)</h2>
+          <div id="products-list" class="products-list"></div>
+        </section>
       </main>
     </div>
 
