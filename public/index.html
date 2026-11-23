@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Regalo Grupal · Participante</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <div class="header-title">
+          <h1>Regalo Grupal en Tiempo Real</h1>
+          <p>Lista compartida sincronizada por WebSocket</p>
+        </div>
+        <div class="header-meta">
+          <span id="user-badge" class="badge badge-user hidden"></span>
+          <span id="connection-badge" class="badge badge-disconnected">
+            <span class="dot"></span>
+            <span id="connection-text">Conectando...</span>
+          </span>
+        </div>
+      </header>
+
+      <!-- Alerta privada de errores recibidos del servidor -->
+      <div id="server-error-box" class="alert alert-error hidden" role="alert">
+        <div class="alert-header">
+          <strong id="server-error-title">Error del servidor</strong>
+          <button id="dismiss-error-btn" type="button" class="btn-ghost">Cerrar ✕</button>
+        </div>
+        <p id="server-error-message"></p>
+      </div>
+
+      <!-- Pantalla de ingreso -->
+      <section id="join-section" class="card">
+        <h2>Ingresar a la lista compartida</h2>
+        <form id="join-form" class="form-row">
+          <input
+            id="name-input"
+            type="text"
+            placeholder="Tu nombre (2 a 20 caracteres)"
+            maxlength="20"
+            autocomplete="off"
+            required
+          />
+          <button id="join-btn" type="submit" class="btn-primary" disabled>
+            Entrar
+          </button>
+        </form>
+        <p class="hint">
+          No se permiten nombres vacíos ni repetidos entre los participantes conectados.
+        </p>
+      </section>
+
+      <!-- Espacio principal del participante (visible al recibir "welcome") -->
+      <main id="app-section" class="hidden">
+        <section class="card">
+          <h2>Participantes conectados (<span id="participants-count">0</span>)</h2>
+          <div id="participants-list" class="participants-list"></div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/participant.js"></script>
+  </body>
+</html>
