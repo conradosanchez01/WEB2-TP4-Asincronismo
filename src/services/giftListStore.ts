@@ -1,4 +1,8 @@
-import { ProductItem, ServerErrorCode } from '../types/protocol.js';
+import {
+  ProductItem,
+  ScreenProductItem,
+  ServerErrorCode,
+} from '../types/protocol.js';
 import { normalizeName } from '../validation/messageValidator.js';
 import { CatalogProduct } from './catalogService.js';
 
@@ -198,6 +202,18 @@ export class GiftListStore {
         return a.sequence - b.sequence;
       })
       .map((stored) => this.toProductItem(stored));
+  }
+
+  /** Devuelve la vista resumida del ranking pensada para la pantalla compartida (SSE). */
+  getScreenProducts(): ScreenProductItem[] {
+    return this.getRankedProducts().map((item) => ({
+      id: item.id,
+      title: item.title,
+      price: item.price,
+      image: item.image,
+      proposedBy: item.proposedBy,
+      votesCount: item.votesCount,
+    }));
   }
 
   /** Proyecta un StoredProduct interno al formato público definido en el contrato. */

@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { loadConfig } from './config.js';
 import { CatalogService } from './services/catalogService.js';
 import { GiftListStore } from './services/giftListStore.js';
+import { SseHandler } from './transport/sseHandler.js';
 import { WsHandler } from './transport/wsHandler.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -59,13 +60,15 @@ async function serveStaticFile(
 
 /**
  * Punto de entrada del servidor único: levanta el servidor HTTP para servir
- * el frontend estático y delega las solicitudes de upgrade en /ws al WsHandler.
+ * el frontend estático, el stream SSE de la pantalla (/events) y el upgrade
+ * WebSocket de los participantes (/ws) sobre el mismo puerto.
  */
 function main(): void {
   const config = loadConfig();
   const store = new GiftListStore();
   const catalog = new CatalogService(config);
-  const wsHandler = new WsHandler(store, catalog);
+  const sseHandler = new SseHandler(store);
+  const wsHandler = new WsHandler(store, catalog, sseHandler);
 
   const server = createServer((req: IncomingMessage, res: ServerResponse) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
@@ -77,9 +80,21 @@ function main(): void {
       return;
     }
 
+    // Stream unidireccional Server-Sent Events para la pantalla compartida
+    if (pathname === '/events') {
+      sseHandler.handleConnection(req, res);
+      return;
+    }
+
     // Página principal del participante
     if (pathname === '/' || pathname === '/index.html') {
       void serveStaticFile(res, 'index.html');
+      return;
+    }
+
+    // Página de pantalla compartida (solo lectura)
+    if (pathname === '/pantalla' || pathname === '/screen' || pathname === '/screen.html') {
+      void serveStaticFile(res, 'screen.html');
       return;
     }
 
@@ -112,7 +127,9 @@ function main(): void {
     console.log('  TP4 · Regalo Grupal en Tiempo Real (Node.js + TypeScript)');
     console.log('==============================================================');
     console.log(`  Participante (WS):  http://localhost:${config.port}/`);
+    console.log(`  Pantalla (SSE):     http://localhost:${config.port}/pantalla`);
     console.log(`  WebSocket endpoint: ws://localhost:${config.port}/ws`);
+    console.log(`  SSE endpoint:       http://localhost:${config.port}/events`);
     console.log('--------------------------------------------------------------');
     console.log(`  Catálogo URL:       ${config.catalogBaseUrl}`);
     console.log(`  Timeout catálogo:   ${config.catalogTimeoutMs} ms`);
@@ -124,6 +141,7 @@ function main(): void {
   const shutdown = () => {
     console.log('\n[server] Cerrando servidor...');
     wsHandler.closeAll();
+    sseHandler.closeAll();
     server.close(() => {
       process.exit(0);
     });

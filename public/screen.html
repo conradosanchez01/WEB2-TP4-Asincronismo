@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Regalo Grupal · Pantalla en Vivo</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body class="screen-body">
+    <div class="container">
+      <header class="header">
+        <div class="header-title">
+          <h1>Ranking en Vivo · Regalo Grupal</h1>
+          <p>Pantalla de solo lectura actualizada por Server-Sent Events (SSE)</p>
+        </div>
+        <div class="header-meta">
+          <span id="sse-badge" class="badge badge-disconnected">
+            <span class="dot"></span>
+            <span id="sse-text">Conectando...</span>
+          </span>
+          <a href="/" class="badge">Vista Participante ↗</a>
+        </div>
+      </header>
+
+      <!-- Métricas en vivo: participantes conectados, productos y última actualización -->
+      <section class="screen-stats">
+        <div class="stat-box">
+          <div class="stat-label">Participantes conectados</div>
+          <div id="screen-participants-count" class="stat-value">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Productos propuestos</div>
+          <div id="screen-products-count" class="stat-value">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Última actualización</div>
+          <div id="screen-updated-at" class="stat-value screen-updated-value">—</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Ranking actual</h2>
+        <div id="screen-ranking-list" class="products-list">
+          <div class="empty-state">Esperando datos del servidor...</div>
+        </div>
+      </section>
+    </div>
+
+    <script src="/screen.js"></script>
+  </body>
+</html>

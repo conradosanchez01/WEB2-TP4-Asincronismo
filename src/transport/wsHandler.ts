@@ -11,6 +11,7 @@ import {
   ServerMessage,
 } from '../types/protocol.js';
 import { parseAndValidateClientMessage } from '../validation/messageValidator.js';
+import { SseHandler } from './sseHandler.js';
 
 /** Estado asociado a cada conexión WebSocket individual mientras permanezca abierta. */
 interface ClientSession {
@@ -36,7 +37,8 @@ export class WsHandler {
 
   constructor(
     private readonly store: GiftListStore,
-    private readonly catalog: CatalogService
+    private readonly catalog: CatalogService,
+    private readonly sseHandler: SseHandler
   ) {
     // noServer: true permite acoplar WebSocket al mismo servidor HTTP y puerto.
     this.wss = new WebSocketServer({
@@ -219,6 +221,9 @@ export class WsHandler {
       },
       session.ws
     );
+
+    // Actualiza el contador de conectados en las pantallas SSE.
+    this.sseHandler.broadcastParticipantsCount();
   }
 
   /**
@@ -317,10 +322,11 @@ export class WsHandler {
         reason: 'products_added',
         actor: actorName,
       });
+      this.sseHandler.broadcastRanking();
     }
   }
 
-  /** Registra un voto y difunde el ranking reordenado a todos los participantes. */
+  /** Registra un voto y difunde el ranking reordenado a participantes y pantallas SSE. */
   private handleVote(
     session: ClientSession,
     actorName: string,
@@ -338,9 +344,10 @@ export class WsHandler {
       reason: 'vote_added',
       actor: actorName,
     });
+    this.sseHandler.broadcastRanking();
   }
 
-  /** Retira un voto existente y difunde el ranking reordenado a todos los participantes. */
+  /** Retira un voto existente y difunde el ranking reordenado a participantes y pantallas SSE. */
   private handleUnvote(
     session: ClientSession,
     actorName: string,
@@ -358,6 +365,7 @@ export class WsHandler {
       reason: 'vote_removed',
       actor: actorName,
     });
+    this.sseHandler.broadcastRanking();
   }
 
   /**
@@ -381,6 +389,7 @@ export class WsHandler {
       reason: 'product_removed',
       actor: actorName,
     });
+    this.sseHandler.broadcastRanking();
   }
 
   /**
@@ -409,6 +418,7 @@ export class WsHandler {
           event: 'left',
           participant: departedName,
         });
+        this.sseHandler.broadcastParticipantsCount();
       }
     }
   }

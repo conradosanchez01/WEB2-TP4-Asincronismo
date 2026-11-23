@@ -20,6 +20,16 @@ export interface ProductItem {
   addedAt: number;
 }
 
+/** Proyección liviana de un producto para la Pantalla SSE (no necesita el detalle de votantes). */
+export interface ScreenProductItem {
+  id: number;
+  title: string;
+  price: number;
+  image: string;
+  proposedBy: string;
+  votesCount: number;
+}
+
 /** Motivos posibles por los que un ID de una propuesta no pudo agregarse. */
 export type ProposalFailureReason =
   | 'NOT_FOUND'
@@ -162,3 +172,36 @@ export type ServerMessage =
   | ListUpdatedMessage
   | ProposalResultMessage
   | ErrorMessage;
+
+/* ============================================================================
+ * Eventos SSE (Server-Sent Events): Servidor -> Pantalla (solo lectura)
+ * ============================================================================ */
+
+/** Estado completo enviado a la pantalla apenas abre la conexión SSE en /events. */
+export interface ScreenSnapshotEvent {
+  participantsCount: number;
+  products: ScreenProductItem[];
+  updatedAt: string;
+}
+
+/** Novedad enviada a la pantalla cuando cambian los productos o el orden del ranking. */
+export interface ScreenRankingUpdatedEvent {
+  participantsCount: number;
+  products: ScreenProductItem[];
+  updatedAt: string;
+}
+
+/** Novedad liviana enviada a la pantalla cuando cambia solo la cantidad de conectados. */
+export interface ScreenParticipantsUpdatedEvent {
+  participantsCount: number;
+  updatedAt: string;
+}
+
+/** Mapa de nombres de eventos SSE a la forma exacta de su payload JSON. */
+export type ScreenEventMap = {
+  snapshot: ScreenSnapshotEvent;
+  ranking_updated: ScreenRankingUpdatedEvent;
+  participants_updated: ScreenParticipantsUpdatedEvent;
+};
+
+export type ScreenEventName = keyof ScreenEventMap;
