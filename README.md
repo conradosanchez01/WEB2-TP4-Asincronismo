@@ -1,3 +1,7 @@
+
+
+
+
 # TP4 · Asincronismo e integración con Node.js y TypeScript
 
 Aplicación web en tiempo real para coordinar la compra de un **regalo grupal**: varios participantes se conectan desde su navegador para proponer productos del catálogo externo de [DummyJSON](https://dummyjson.com/docs/products) y votar sus favoritos, mientras una pantalla compartida (TV o proyector) muestra el ranking actualizado en vivo sin recargar.
@@ -245,10 +249,12 @@ La pantalla se suscribe mediante `new EventSource('/events')` (canal exclusivame
 
 ### Sincronización en tiempo real (3 participantes + pantalla SSE)
 * 🎬 [Ver video de demostración (`docs/evidencias/demo-sincro.mp4`)](docs/evidencias/demo-sincro.mp4)
+https://github.com/user-attachments/assets/b7555479-db3d-4e95-bf7d-655608a283c1
 
 ### Comportamiento con el catálogo lento (consultas en paralelo sin bloqueos)
 * 🎬 [Ver video de catálogo lento (`docs/evidencias/catalogo-lento.mp4`)](docs/evidencias/catalogo-lento.mp4)
-
+* https://github.com/user-attachments/assets/955049d9-af67-4e31-ac31-28087d83e17c
+* 
 ### Propuesta con fallos parciales (errores visibles solo para el autor)
 **Antes de enviar la propuesta (`1,2,3,1,99999` desde `ana`):**
 ![Antes de la propuesta con fallos parciales](docs/evidencias/antes-fallos-parciales.png)
