@@ -253,7 +253,8 @@ La pantalla se suscribe mediante `new EventSource('/events')` (canal exclusivame
  https://github.com/user-attachments/assets/955049d9-af67-4e31-ac31-28087d83e17c
 ### Comportamiento con el catálogo lento (consultas en paralelo sin bloqueos)
 * 🎬 [Ver video de catálogo lento (`docs/evidencias/catalogo-lento.mp4`)](docs/evidencias/catalogo-lento.mp4)
-*https://github.com/user-attachments/assets/b7555479-db3d-4e95-bf7d-655608a283c1
+*
+https://github.com/user-attachments/assets/b7555479-db3d-4e95-bf7d-655608a283c1
 * 
 ### Propuesta con fallos parciales (errores visibles solo para el autor)
 **Antes de enviar la propuesta (`1,2,3,1,99999` desde `ana`):**
